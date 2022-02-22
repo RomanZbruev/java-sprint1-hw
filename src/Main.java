@@ -28,7 +28,7 @@ public class Main {
                 }
             }
             else if (command == 5) {
-                if (yearRep.lines != null){ // проверка,считаны ли годовые отчёты
+                if (!yearRep.dataYear.isEmpty()){ // проверка,считаны ли годовые отчёты
                     System.out.println("Информация о годовом отчёте:");
                     yearRep.yearInfo();
                 }

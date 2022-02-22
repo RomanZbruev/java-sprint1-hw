@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 
@@ -10,9 +11,9 @@ public class MonthlyReport {
     "Месяц - строки отчета из этого месяца", monthIncomeData и monthExpenditureData - данные помесячных доходов и трат
     соответственно.
      */
-    HashMap<String, String[]> monthData = new HashMap<>();
-    HashMap<String, Integer> monthIncomeData = new HashMap<>();
-    HashMap<String, Integer> monthExpenditureData = new HashMap<>();
+    HashMap<String, ArrayList<MonthDataStorage>> monthData = new HashMap<>(); //храним таблицу "Месяц - данные на месяц"
+    HashMap<String, Integer> monthIncomeData = new HashMap<>(); //данные о доходах по месяцам
+    HashMap<String, Integer> monthExpenditureData = new HashMap<>();// данные о расходах по месяцам
 
     void readingMonthlyReport(String path){ // чтение месячных отчетов
         for (int i = 1; i < 4; i++) {
@@ -22,50 +23,63 @@ public class MonthlyReport {
                 String month;
                 if (i == 1) {
                     month = "Январь";
-                    monthData.put(month, lines);
+                    ArrayList<MonthDataStorage> stringData = new ArrayList<>(); // список данных на данный месяц
+                    for (int j=1; j< lines.length; j++){
+                        String[] lineContents = lines[j].split(",");
+                        MonthDataStorage yds = new MonthDataStorage(lineContents[0],lineContents[1],
+                                lineContents[2],lineContents[3]);
+                        stringData.add(yds); //заносим данные в список данных на этот месяц
+                    }
+                    monthData.put(month, stringData); //заносим даные в хэш-таблицу. Далее -аналогично
                 } else if (i == 2) {
                     month = "Февраль";
-                    monthData.put(month, lines);
+                    ArrayList<MonthDataStorage> stringData = new ArrayList<>();
+                    for (int j=1; j< lines.length; j++){
+                        String[] lineContents = lines[j].split(",");
+                        MonthDataStorage yds = new MonthDataStorage(lineContents[0],lineContents[1],
+                                lineContents[2],lineContents[3]);
+                        stringData.add(yds);
+                    }
+                    monthData.put(month, stringData);
                 } else {
                     month = "Март";
-                    monthData.put(month, lines);
+                    ArrayList<MonthDataStorage> stringData = new ArrayList<>();
+                    for (int j=1; j< lines.length; j++){
+                        String[] lineContents = lines[j].split(",");
+                        MonthDataStorage yds = new MonthDataStorage(lineContents[0],lineContents[1],
+                                lineContents[2],lineContents[3]);
+                        stringData.add(yds);
+                    }
+                    monthData.put(month, stringData);
                 }
                 System.out.println("Месячный рассчет за "+ month +" считан!");
             } catch (IOException e) {
                 System.out.println("Невозможно прочитать файлы с месячными отчётами. " +
                         "Возможно, файл не находится в нужной директории.");
-                monthData = null;
             }
         }
    }
 
    void incomeData() { // заполнение таблицы помесячных доходов
        for (String key : monthData.keySet()) {
-           for (int i = 1; i < monthData.get(key).length; i++) {
-               String line = monthData.get(key)[i];
-               String[] lineContents = line.split(",");
-               int sumOfOne = Integer.parseInt(lineContents[3]);
-               int quantity = Integer.parseInt(lineContents[2]);
-               if (lineContents[1].equals("FALSE") && !monthIncomeData.containsKey(key)) {
-                   monthIncomeData.put(key, sumOfOne * quantity);
-               } else if (lineContents[1].equals("FALSE") && monthIncomeData.containsKey(key))
-                   monthIncomeData.put(key, monthIncomeData.get(key) + sumOfOne * quantity);
+           for (MonthDataStorage mds : monthData.get(key)) {
+               if (mds.isExpense.equals("FALSE") && !monthIncomeData.containsKey(key)) {
+                   monthIncomeData.put(key, mds.sumOfOne * mds.quantity);
+               } else if (mds.isExpense.equals("FALSE") && monthIncomeData.containsKey(key)) {
+                   monthIncomeData.put(key, monthIncomeData.get(key) + mds.sumOfOne * mds.quantity);
+               }
            }
        }
    }
 
    void expenditureData(){ // заполнение таблицы помесячных расходов
         for (String key: monthData.keySet()){
-            for (int i=1; i<monthData.get(key).length; i++){
-                String line = monthData.get(key)[i];
-                String[] lineContents = line.split(",");
-                int sumOfOne = Integer.parseInt(lineContents[3]);
-                int quantity = Integer.parseInt(lineContents[2]);
-                if (lineContents[1].equals("TRUE") && !monthExpenditureData.containsKey(key)){
-                    monthExpenditureData.put(key,sumOfOne*quantity);
+            for (MonthDataStorage mds : monthData.get(key)){
+                if (mds.isExpense.equals("TRUE") && !monthExpenditureData.containsKey(key)){
+                    monthExpenditureData.put(key,mds.sumOfOne * mds.quantity);
                 }
-                else if(lineContents[1].equals("TRUE") && monthExpenditureData.containsKey(key))
-                    monthExpenditureData.put(key,monthExpenditureData.get(key)+sumOfOne*quantity);
+                else if(mds.isExpense.equals("TRUE") && monthExpenditureData.containsKey(key))
+                    monthExpenditureData.put(key,monthExpenditureData.get(key)+mds.sumOfOne * mds.quantity);
             }
         }
     }
@@ -73,14 +87,11 @@ public class MonthlyReport {
    void mostExpenseInMonth(String month){ //нахождение самого дорогого пункта расходов в месяце
         int mostExpense = 0;
         String itemName = null;
-        for (String line : monthData.get(month)){
-            String[] lineContents = line.split(",");
-            if (lineContents[1].equals("TRUE")){
-                int sumOfOne = Integer.parseInt(lineContents[3]);
-                int quantity = Integer.parseInt(lineContents[2]);
-                if (sumOfOne*quantity > mostExpense){
-                    mostExpense = sumOfOne*quantity;
-                    itemName = lineContents[0];
+        for (MonthDataStorage mds : monthData.get(month)){
+            if (mds.isExpense.equals("TRUE")){
+                if (mds.sumOfOne * mds.quantity > mostExpense){
+                    mostExpense = mds.sumOfOne * mds.quantity;
+                    itemName = mds.itemName;
                 }
             }
         }
@@ -95,14 +106,11 @@ public class MonthlyReport {
     void mostProfitInMonth(String month){ // самый прибыльный пункт доходов в месяце
         int mostProfit = 0;
         String itemName = null;
-        for (String line : monthData.get(month)){
-            String[] lineContents = line.split(",");
-            if (lineContents[1].equals("FALSE")){
-                int sumOfOne = Integer.parseInt(lineContents[3]);
-                int quantity = Integer.parseInt(lineContents[2]);
-                if (sumOfOne*quantity > mostProfit){
-                    mostProfit = sumOfOne*quantity;
-                    itemName = lineContents[0];
+        for (MonthDataStorage mds : monthData.get(month)){
+            if (mds.isExpense.equals("FALSE")){
+                if (mds.sumOfOne * mds.quantity > mostProfit){
+                    mostProfit = mds.sumOfOne * mds.quantity;
+                    itemName = mds.itemName;
                 }
             }
         }

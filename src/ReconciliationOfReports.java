@@ -3,10 +3,10 @@ public class ReconciliationOfReports { // класс сверки отчётов
         /*
         Блок с if, else if - проверки, считал ли пользователь отчёты
          */
-        if(yearRep.lines == null && monRep.monthData.isEmpty()){
+        if(yearRep.dataYear.isEmpty() && monRep.monthData.isEmpty()){
             System.out.println("Пожалуйста, считайте файл с годовым отчётом и файлы с месячными отчётами.");
         }
-        else if(yearRep.lines == null) {
+        else if(yearRep.dataYear.isEmpty()) {
             System.out.println("Пожалуйста, считайте файл с годовым отчётом.");
         }
         else if(monRep.monthData.isEmpty()){
